@@ -37,9 +37,9 @@
 
 ​    具体的拼接模式：
 
-             1. 对不含由回路的分叉节点，使用switch或者if-else语句来实现。
-             2. 对含有回路的状态节点，使用一段由while结构或者if结构构成的程序来实现。
-             3. 终态节点表示已经识别出某种单词符号，对应的语句应该是return(C, val)。
+1. 对不含由回路的分叉节点，使用switch或者if-else语句来实现。
+2. 对含有回路的状态节点，使用一段由while结构或者if结构构成的程序来实现。
+3. 终态节点表示已经识别出某种单词符号，对应的语句应该是return(C, val)。
 
 ​    更一般的可以使用**数据驱动的表来实现**，状态被编码成int，状态的转换使用一个二维表来表示。
 
@@ -169,13 +169,16 @@
 
 步骤三：使用子集法发确定NFA（消除$\varepsilon$和状态转移的不确定性）
 
+子集法：
 
+* 假设I是状态集的一个子集，**I的$\varepsilon$-闭包（$\varepsilon$-closure(I)）**定义为：
 
-假设I是状态集的一个子集，**I的$\varepsilon$-闭包（$\varepsilon$-closure(I)）**定义为：
+  1. 若$s \in I$，则$s \in \varepsilon-closure(I)$。
+  2. 若$s \in I$，则经过$s$出发的任意一条$\varepsilon$弧能到达的任何状态$s^{'}$都属于$\varepsilon$-closure(I)
 
-1. 若$s \in I$，则$s \in \varepsilon-closure(I)$。
-2. 若$s \in I$，则经过$s$出发的任意一条$\varepsilon$弧能到达的任何状态$s^{'}$都属于$\varepsilon$-closure(I)
+  所以$\varepsilon$-closure(I)的形式化定义为：
 
-所以$\varepsilon$-closure(I)的形式化定义为：
+  $\varepsilon-closure(I)$ = $I \cup \{s^{'} | 从某个s \in I出发经过任意多条\varepsilon 弧能到达的状态\}$。 
 
-$\varepsilon-closure(I)$ = $I \cup \{s^{'} | 从某个s \in I出发经过任意多条\varepsilon 弧能到达的状态\}$。 
+* 假设$a$是$\Sigma$中的一个字符，定义**集合$I_a = \varepsilon-closure(J)$**，其中$J$为$I$中的某个状态经过$a$弧而到达的状态集合
+
