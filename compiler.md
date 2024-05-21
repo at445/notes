@@ -228,7 +228,7 @@ $F \rightarrow (E)|i$
 
 下图是状态转移图
 
-![image-20240519152346141](C:\Users\HUAWEI\AppData\Roaming\Typora\typora-user-images\image-20240519152346141.png)
+<img src="assets/image-20240521142449514.png" alt="image-20240521142449514" style="zoom:80%;" />
 
 - 根据上面的图可以看出NFA和DFA的区别：
 
@@ -253,7 +253,6 @@ $F \rightarrow (E)|i$
 
 3. 对于a*形式的正规式，引入一个的装，这个状态接受a转移到自己，与老状态的连接都使用$\varepsilon$​弧。
 
-   <img src="C:\Users\HUAWEI\AppData\Roaming\Typora\typora-user-images\image-20240519162553742.png" alt="image-20240519162553742" style="zoom: 67%;" />
 
 步骤三：使用子集法发确定NFA（消除$\varepsilon$和状态转移的不确定性）
 
@@ -348,10 +347,10 @@ $F \rightarrow (E)|i$
 
 **过程**：
 
-      1. 对每条规则构建一个相应的非确定有限自动机。
-      2. 加入一个新初态X，通过$\varepsilon$弧将这些自动机连接成一个新的NFA。
-      3. 再把新得到的NFA通过确定化转换为DFA，通过算法简化DFA。
-      4. 生成对应的状态转换表和控制执行程序。
+  1. 对每条规则构建一个相应的非确定有限自动机。
+  2. 加入一个新初态X，通过$\varepsilon$弧将这些自动机连接成一个新的NFA。
+  3. 再把新得到的NFA通过确定化转换为DFA，通过算法简化DFA。
+  4. 生成对应的状态转换表和控制执行程序。
 
 # 二、语法分析
 
@@ -408,11 +407,15 @@ for i = 1 to n Do:
 
 步骤三：简化步骤二所得的的文法，去除开始符号出发永远无法到达的非终结符的产生规则。
 
-​			
-
 ### 2.2 LL(1)分析方法
 
+#### 2.2.1 FIRST集合
 
+**定义**：假设G是一个不包含左递归的文法，对G的每个非终结符$\alpha$，定义它的终结符首符集$FIRST(\alpha)$为：
 
+$FIRST(\alpha) = \{a | \alpha \mathop{\Rightarrow} \limits^* a..., a \in V_t\}$
 
+如果$\alpha \mathop{\Rightarrow} \limits^* \varepsilon$， 那么 $\varepsilon \in FIRST(\alpha)$。
+
+**作用**：如果
 
