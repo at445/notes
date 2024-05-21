@@ -411,11 +411,19 @@ for i = 1 to n Do:
 
 #### 2.2.1 FIRST集合
 
-**定义**：假设G是一个不包含左递归的文法，对G的每个非终结符$\alpha$，定义它的终结符首符集$FIRST(\alpha)$为：
+**定义**：假设G是一个不包含左递归的文法，对G的所有非终结符的每个候选$\alpha$，定义它的终结符首符集$FIRST(\alpha)$为：
 
 $FIRST(\alpha) = \{a | \alpha \mathop{\Rightarrow} \limits^* a..., a \in V_t\}$
 
 如果$\alpha \mathop{\Rightarrow} \limits^* \varepsilon$， 那么 $\varepsilon \in FIRST(\alpha)$。
 
-**作用**：如果
+**作用**：如果非终结符A的任何两个不同候选$\alpha_i$和$\alpha_j$，都满足$FIRST(\alpha_i) \cap FIRST(\alpha_j) = \phi$​（即**是A的所有候选首符集两两不相交**）。当要求A匹配输入串时，A就能选择一个终结符首符集包含了当前字符a的候选项做匹配（如果有这么一个候选项）。
+
+**提取公共公因子**：假定关于非终结符A的产生式规则是$A \rightarrow \delta\beta_1 |\delta\beta_2 | ... | \delta\beta_n | \gamma_1 | \gamma_2 |... |\gamma_m$(其中每个$\gamma$都不以$\delta$开头)。那么，可以把这些规则改写成
+
+$A \rightarrow \delta A^{‘}| \gamma_1 | \gamma_2 |... |\gamma_m$
+
+$A^{’} \rightarrow \beta_1 |\beta_2 | ... | \beta_n$
+
+这样就能消除非终结符$A$中的候选项的首符集有重叠的问题。
 
