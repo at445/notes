@@ -427,3 +427,59 @@ $A^{’} \rightarrow \beta_1 |\beta_2 | ... | \beta_n$
 
 这样就能消除非终结符$A$中的候选项的首符集有重叠的问题。
 
+#### 2.2.2 FOLLOW集合
+
+**定义**：$S$是文法$G$的开始符号，对于$G$的任何非终结符$A$，定义$A$的$FOLLOW$集合$FOLLOW(A) = \{a | S \mathop{\Rightarrow} \limits^* ...Aa..., a \in V_t \}$，特别地，若$S \mathop{\Rightarrow} \limits^* ...A$, 则规定$\# \in FOLLOW(A)$​。
+
+总的来说，两两不相交的$FIRST$集合保证了最多只会有一个句型参与后续匹配工作，$FOLLOW$集合保证了前一个匹配中只能匹配$\varepsilon$时后续的匹配是否能继续。如果不能继续，那么必然语法错误。
+
+#### 2.2.3 LL(1)文法
+
+第一个L表示从左向右扫描输入串，第二个L表示最左推导，1表示每次只需要向前看一步。这样就避免了回溯问题。
+
+**成立条件**：
+
+1. 文法不含有左递归。
+2. 文法中所有非终结符A的各个产生式的候选首符集两两不相交。
+3. 文法中所有非终结符A，若它的某个候选产生式$\alpha$的首符集包含了$\varepsilon$, 那么$FIRST(\alpha) \cap FOLLOW(A) = \phi$。
+
+**过程**：
+
+对于当前的输入字符$a$，假设使用非终结符$A$去做匹配，$A \rightarrow \alpha_1| \alpha_2|...|\alpha_n$​。
+
+如果$a$属于$\alpha_i$的首符集，那么就使用$\alpha_i$做匹配。
+
+如果$a$不属于任何一个首符集，但候选的首符集中有$\varepsilon$，而且$a\in FLLOW(A)$，则让A匹配$\varepsilon$。
+
+否则$a$的出现是一种语法错误。
+
+#### 2.2.5 FIRST集合的构建方法
+
+对于每个$X \in V_t \cup V_n$，连续使用下面规则，直到每个$FIRST$不再增大为止：
+
+1. 如果$X \in V_t$，那么把$X$本身加入$FIRST(X)$
+
+2. 如果$X \in V_n$，而且有产生式$X \rightarrow a...$，则把$a$加入到$FIRST(X)$；如果$X \rightarrow \varepsilon$也是一条产生式， 则把$\varepsilon$加入到$FIRST(X)$。
+
+3. 如果$X \rightarrow Y...$是一条产生式而且$Y \in V_n$，则把$FIRST(Y)$中的所有非$\varepsilon$元素都加入到$FIRST(X)$。
+
+4. 如果$X \rightarrow Y_1Y_2...Y_{i-1}Y_i..Y_k$是一个产生式，其中$Y_1$到$Y_{i-1}$都是非终结符，那么：
+
+   a. 对于任何$1 \le j \le i-1$， $FIRST(Y_j)$都含有$\varepsilon$，则把$FIRST(Y_j)$中的所有非$\varepsilon$元素都加入到$FIRST(X)$。
+
+   b. 如果右边所有的非终结符$FIRST(Y_j )$都含有$\varepsilon$, 则把$\varepsilon$加入到$FIRST(X)$​​。
+
+**备注**：有意思的是$\varepsilon$的在构建$FIRST$的作用，
+
+	1. 如果某个非终结符$X$可以推导出 $\varepsilon$，那么很明显$\varepsilon$应该属于这个非终结符的首符集，因为在碰到这个非终结符不能识别的字符时，需要有跳脱这个非终结符的能力。（这里， 某个非终结符$X$可以推导出$\varepsilon$有两种体现形式：一种并联形式是$X \rightarrow ...|\varepsilon |...$，这种形式中只要其中有一个能推导出$\varepsilon$，那么$X$就能推导出$\varepsilon$《构建的第二步》，一种串联形式是$X \rightarrow Y_1Y_2...Y_{i-1}Y_i..Y_k$，这种形式则需要所有都能推出$\varepsilon$，最终才能推导出$\varepsilon$《构建的第四步的第二小步》。）
+	1. 另外$\varepsilon$在处理串联这种结构的首符集继承的问题上，对于$X \rightarrow Y_1Y_2...Y_{i-1}Y_i..Y_k$这样一个产生式，$X$首符集能继承$Y_i$的前提是，所有在$Y_i$之前的$Y_j$都能被跳脱。而且首符集的继承不应该包含$\varepsilon$，这就回到了串联形式的属性上，对于串联形式来说只有所有的产生式右边的非终结符都能推导出$\varepsilon$才能说明左边的非终结符能够推导出$\varepsilon$，所以这儿必须要等看完了之后才能决定$\varepsilon$加还是不加《构建的第四步的第一小步》
+
+#### 2.2.6 FOLLOW集合的构建方法
+
+对于每个$X \in V_n$，连续使用下面规则，直到每个$FOLLOW$不再增大为止：
+
+1.  对于文法的开始符号$S$，把$\#$加入到$FOLLOW(S)$中
+2. 如果$A \rightarrow \alpha B \beta$是一个产生式，那么把$FIRST(\beta)-\{\varepsilon\}$加到$FOLLOW(B)$中。
+3. 如果$A \rightarrow \alpha B$是一个产生式，或者$A \rightarrow \alpha B \beta$是一个产生式而且$\varepsilon \mathop{\Rightarrow} \limits^* FIRST(B)$，那么就可以把$FOLLOW(A)$加到$FOLLOW(B)$中。
+
+**备注**：为什么要把$\varepsilon$排除在$FOLLOW$集合外？这跟$FOLLOW$集合的业务定位有关系，$FOLLOW$集合用来在前面的$FIRST$集合匹配不了字符（只能匹配$\varepsilon$时）的时候，判断后续的匹配是否能继续。匹配中止有专门的终结符$\#$而非$\varepsilon$，所以加入$\varepsilon$对匹配终结符没有关系。**$\varepsilon$的定位只是用来在匹配中跳脱某一规则**，所以它只用出现在$FIRST$集合中。
