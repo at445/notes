@@ -469,10 +469,10 @@ $A^{’} \rightarrow \beta_1 |\beta_2 | ... | \beta_n$
 
    b. 如果右边所有的非终结符$FIRST(Y_j )$都含有$\varepsilon$, 则把$\varepsilon$加入到$FIRST(X)$​​。
 
-**备注**：有意思的是$\varepsilon$的在构建$FIRST$的作用，
+**备注**：有意思的是$\varepsilon$的在构建$FIRST$的作用。
 
-	1. 如果某个非终结符$X$可以推导出 $\varepsilon$，那么很明显$\varepsilon$应该属于这个非终结符的首符集，因为在碰到这个非终结符不能识别的字符时，需要有跳脱这个非终结符的能力。（这里， 某个非终结符$X$可以推导出$\varepsilon$有两种体现形式：一种并联形式是$X \rightarrow ...|\varepsilon |...$，这种形式中只要其中有一个能推导出$\varepsilon$，那么$X$就能推导出$\varepsilon$《构建的第二步》，一种串联形式是$X \rightarrow Y_1Y_2...Y_{i-1}Y_i..Y_k$，这种形式则需要所有都能推出$\varepsilon$，最终才能推导出$\varepsilon$《构建的第四步的第二小步》。）
-	1. 另外$\varepsilon$在处理串联这种结构的首符集继承的问题上，对于$X \rightarrow Y_1Y_2...Y_{i-1}Y_i..Y_k$这样一个产生式，$X$首符集能继承$Y_i$的前提是，所有在$Y_i$之前的$Y_j$都能被跳脱。而且首符集的继承不应该包含$\varepsilon$，这就回到了串联形式的属性上，对于串联形式来说只有所有的产生式右边的非终结符都能推导出$\varepsilon$才能说明左边的非终结符能够推导出$\varepsilon$，所以这儿必须要等看完了之后才能决定$\varepsilon$加还是不加《构建的第四步的第一小步》
+1. 如果某个非终结符$X$可以推导出 $\varepsilon$，那么很明显$\varepsilon$应该属于这个非终结符的首符集，因为在碰到这个非终结符不能识别的字符时，需要有跳脱这个非终结符的能力。（这里， 某个非终结符$X$可以推导出$\varepsilon$有两种体现形式：一种并联形式是$X \rightarrow ...|\varepsilon |...$，这种形式中只要其中有一个能推导出$\varepsilon$，那么$X$就能推导出$\varepsilon$《构建的第二步》，一种串联形式是$X \rightarrow Y_1Y_2...Y_{i-1}Y_i..Y_k$，这种形式则需要所有都能推出$\varepsilon$，最终才能推导出$\varepsilon$《构建的第四步的第二小步》。）
+2. 另外$\varepsilon$在处理串联这种结构的首符集继承的问题上，对于$X \rightarrow Y_1Y_2...Y_{i-1}Y_i..Y_k$这样一个产生式，$X$首符集能继承$Y_i$的前提是，所有在$Y_i$之前的$Y_j$都能被跳脱。而且首符集的继承不应该包含$\varepsilon$，这就回到了串联形式的属性上，对于串联形式来说只有所有的产生式右边的非终结符都能推导出$\varepsilon$才能说明左边的非终结符能够推导出$\varepsilon$，所以这儿必须要等看完了之后才能决定$\varepsilon$加还是不加《构建的第四步的第一小步》
 
 #### 2.2.6 FOLLOW集合的构建方法
 
