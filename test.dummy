@@ -1,0 +1,22 @@
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import time
+driver = webdriver.Chrome()
+driver.maximize_window()
+driver.implicitly_wait(10)
+driver.get('https://imip.midea.com/main.html#/r/resource_approval/1726822702000288b56cffe7847940c7')
+username = driver.find_element(by=By.ID, value="username")
+username.send_keys("chenjs162")
+password = driver.find_element(by=By.ID, value="password")
+password.send_keys("From1to8.")
+Login = driver.find_element(by=By.CLASS_NAME, value="login-button")
+Login.click()
+
+element = WebDriverWait(driver, 10).until(
+    EC.presence_of_element_located((By.XPATH, "//button[@class=\"el-button formbutton el-button--primary\"]"))
+)
+time.sleep(1)
+element.click()
+driver.quit()
