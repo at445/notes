@@ -2,7 +2,7 @@
 
 ## 1. **几个基本概念**
 
-- 一个字符的集合构成了**字母表$\Sigma$**。
+- 字符的集合构成了**字母表$\Sigma$**。
 
 - **字母表$\Sigma$**中的每一个元素称为一个**字符**。
 
@@ -15,6 +15,13 @@
   例如：设$\Sigma$ = (a,b)， 则**$\Sigma^*$** = {$\varepsilon$, a, b, aa, ab, ba, bb, aaa, ...}
 
 - **$\Sigma^*$** 的子集**$U$和$V$的连接（积）**定义为$UV=\{\alpha\beta | \alpha \in U \& \beta \in V\}$
+
+  例如：字符表 \(\Sigma = \{0, 1\}\)（二进制场景），定义：
+
+  - \(U = \{0, 11, 001\}\)（U 是 3 个二进制字符串的集合）
+  - \(V = \{\varepsilon\ , 1, 00\}\)（V 含「空串 \(\varepsilon\)」，空串拼接不改变原字符串）
+
+  那么\(UV = \{0, 01, 000, 11, 111, 1100, 001, 0011, 00100\}\)。
 
 - **$V$自身的n次积**记作$V^n=VV...V$。
 
@@ -30,7 +37,7 @@
 
 $G = (V_t, V_n, S, P)$其中：
 
-$V_t$:表示终结符的结合（非空）。 $V_n$:表示非终结符（非空）。$S$：表示文法的开始符合，$S \in V_n$。 $P$:表示产生式有限集。
+$V_t$:表示终结符的集合（非空）。 $V_n$:表示非终结符的集合（非空）。$S$：表示文法的开始符合，$S \in V_n$。 $P$:表示产生式有限集。
 
 产生式的种类不同，形式语言的种类也不同。一共有四种，表述能力依次减弱：
 
@@ -38,7 +45,7 @@ $V_t$:表示终结符的结合（非空）。 $V_n$:表示非终结符（非空�
 
 2. 1型文法（上下文有关文法，线性界限自动机）：形如$\alpha \rightarrow \beta$， 其中$|\alpha| \le |\beta|$， 只有$S \rightarrow \varepsilon$例外。
 
-3. 2型文法（上下文无关文法，非确定下推自动机）：形如$\alpha \rightarrow \beta$， 其中$\alpha \in V_n$；$\beta \in (V_t \cup V_n)*$​。而且S必须出现推导式的左边一次。
+3. 2型文法（上下文无关文法，非确定下推自动机）：形如$\alpha \rightarrow \beta$， 其中$\alpha \in V_n$；$\beta \in (V_t \cup V_n)*$​。而且S必须出现推导式的左边一次。这类语法的核心要求就是“**左边必须是 “单个非终结符”**”，他能表述正规文法所不能表述的嵌套、递归、成对出现。
 
 4. 3型文法（正规文法，有限自动机）：
 
@@ -46,9 +53,11 @@ $V_t$:表示终结符的结合（非空）。 $V_n$:表示非终结符（非空�
 
    b. 左线性文法：形如$A \rightarrow B \alpha$或$A \rightarrow \alpha$，其中$\alpha \in V_t*$; $A, B \in V_n$​。
 
+   这种文法只能表示“**由终结符的有限次重复、可选组合构成的语言**”
+
 ## 3. 基本概念
 
-**直接推出**：$\alpha A \gamma \Rightarrow \alpha \beta \gamma$，当且仅当$A \rightarrow \beta$式一个产生式，且$\alpha , \gamma \in (V_t \cup v_n)*$。
+**直接推出**：$\alpha A \gamma \Rightarrow \alpha \beta \gamma$，当且仅当$A \rightarrow \beta$式一个产生式，且$\alpha , \gamma \in (V_t \cup V_n)*$。
 
 **推导**：如果$\alpha_1 \Rightarrow \alpha_2 \Rightarrow ... \Rightarrow \alpha_n$，则我们称这个序列为$\alpha_1$到$\alpha_n$的一个推导，若存在一个$\alpha_1$到$\alpha_n$的推导，那么称$\alpha_1$可以推导出$\alpha_n$。
 
@@ -70,21 +79,95 @@ $α_1 \mathop{\Rightarrow} \limits^+  α_n$  从$α_1$出发，经过1步或若�
 
 **文法二义性**：对一个句子来说，如果按照某个文法可以推出两颗不同的语法树，那么这个文法是二义的。
 
-**语言的二义性**：如果语言不存在无二义文法，那么语言就是二义的。
+**语言的二义性**：对于语言来说可以有多种不同文法的写法，一些文法的写法可能是二义的，但不能说明该语言是二义的。如果对于一个语言来说，所有的文法表述都是二义的，那么这个语言本身才是二义的。
 
-比如对于表达式的上下文无关文法描述下面的描述是二义的：
+比如对于表达式的上下文无关文法描述:
 
-$G(E) : E \rightarrow i | E+E | E*E|(E)$
+* 下面的描述是二义的：
 
-下面的描述是无二义的：
+​	$G(E) : E \rightarrow i | E+E | E*E|(E)$ <!-- 产生式中的 | 不包含优先级概念 -->
 
-$G(E) : E \rightarrow T | E+T$
+​	假设要推导i + i * i这样一个句子，因为产生式中的|不包含优先级概念，这里就会出现不同的选择
 
-$T \rightarrow F|T*F$
+```c
+//假设先选择*那么最左推导的过程就是
+E -> E * E
+E * E -> E + E * E
+E + E * E -> i + E * E
+i + E * E -> i + i * E
+i + i * E -> i + i * i
+//假设先选择+那么最左推导的过程就是
+E -> E + E
+E + E -> i + E
+i + E -> i + E * E
+i + E * E -> i + i * E
+i + i * E -> i + i * i
+```
 
-$F \rightarrow (E)|i$
+它们得到的语法树也不一样
 
-这说明语言可以有多种不同文法的写法，一些文法的写法可能是二义的，但不能说明该语言是二义的。
+```n
+先选择*         先选择+
+    E            E
+   /|\          /|\
+  E * E        E + E
+ /|\  |        |  /|\
+E + E i        i E * E
+|   |            |   |
+i   i            i   i
+```
+
+一个句子得出了两个不同的语法树，所以这个产生式规则是二义的。
+
+* 下面的描述是无二义的：
+
+​	 $G(E) : E \rightarrow T | E+T$
+
+​	$T \rightarrow F|T*F$
+
+​	$F \rightarrow (E)|i$
+
+​        同样对于i + i * i这个字符串，它的最左推导过程是
+
+        ```c
+        E -> E + T
+        E + T -> T + T
+        T + T -> F + T
+        F + T -> i + T
+        i + T -> i + T * F
+        i + T * F -> i + F * F
+        i + F * F -> i + i * F
+        i + i * F -> i + i * i
+        ```
+
+​         它的最右推导过程就是
+
+```c
+E -> E + T
+E + T -> E + T * F
+E + T * F -> E + T * i
+E + T * i -> E + F * i
+E + F * i -> E + i * i
+E + i * i -> T + i * i
+T + i * i -> F + i * i
+F + i * i -> i + i * i
+```
+
+​         都会得到一个这样的语法树：
+
+```plaintext
+        E
+       /|\
+      E + T
+      |  /|\
+      T T * F
+      | |   |
+      F F   i
+      | |
+      i i
+```
+
+
 
 # 一、词法分析器
 
@@ -252,6 +335,8 @@ $F \rightarrow (E)|i$
 2. 对于a|b形式的正规式，裁成两个弧，分别是a和b。
 
 3. 对于a*形式的正规式，加入一个新的状态，这个状态接受a转移到自己，与老状态的前驱和后继连接都使用$\varepsilon$​弧。
+
+4. 对于a*形式的正规式，引入一个的状态，这个状态接受a转移到自己，与老状态的连接都使用$\varepsilon$弧。
 
 
 步骤三：使用子集法发确定NFA（消除$\varepsilon$和状态转移的不确定性）子集法 ：
@@ -652,3 +737,8 @@ $F \rightarrow (E) | i$
 3. 如果$A \rightarrow \alpha B$是一个产生式，或者$A \rightarrow \alpha B \beta$是一个产生式而且$\varepsilon \mathop{\Rightarrow} \limits^* FIRST(B)$，那么就可以把$FOLLOW(A)$加到$FOLLOW(B)$中。
 
 **备注**：为什么要把$\varepsilon$排除在$FOLLOW$集合外？这跟$FOLLOW$集合的业务定位有关系，$FOLLOW$集合用来在前面的$FIRST$集合匹配不了字符（只能匹配$\varepsilon$时）的时候，判断后续的匹配是否能继续。匹配中止有专门的终结符$\#$而非$\varepsilon$，所以加入$\varepsilon$对匹配终结符没有关系。**$\varepsilon$的定位只是用来在匹配中跳脱某一规则**，所以它只用出现在$FIRST$集合中。
+
+# 三、代码生成
+
+## 1. 表达式的生成
+
