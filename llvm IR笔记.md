@@ -174,7 +174,79 @@ PS：C++的ODR规则本质是一种“**语义 + 链接约束**”：
 
 ## 3.4 调用约定
 
-​	LLVM 的函数、函数调用（`call`）和函数调用并伴随异常处理（`invoke`）均可为调用操作指定一个可选的调用约定。**任意动态调用方与被调用方的调用约定必须匹配**，否则程序行为将属于未定义行为。以下列出的ABI都属于应用ABI的范畴。
+​	LLVM 的函数、函数调用（`call`）和函数调用并伴随异常处理（`invoke`）均可为调用操作指定一个可选的调用约定。常见的又fastcc，tailcc，swiftcc等，**这类调用约定更倾向于是LLVM IR层的调用契约**，后端会根据这些内容决定如何进行lowering。进而决定哪些变化是合法的、成本模型如何评估和后端寄存器的分配策略。
+
+---
+
+> 📌**成本模型**
+>
+> 成本模型不是LLVM中的一个“统一公式”，而是一套分布在不同pass和analysis中的启发式评估体系（这种“用经验规则/阈值/估算值替代精确求解”的方法就叫做启发式评估）。calling convention会被纳入到调用相关的成本模型上。比如，内联决策依赖的就是一个InlineCost，看最终的成本是否低于阈值（threshold），收益足够大（benefit outweigh cost）以及是否违反了硬约束（例如递归、可见性、必须不内联等）。一个直观例子：
+>
+> - `preserve_allcc` 的 callee 需要保存大量寄存器。每次 call 都要 save/restore 一堆寄存器， 这意味着不内联的成本更高。
+> - 而`fastcc` 的参数多走寄存器。所以 call 的成本相对小，那么call的开销在内联成本模型中的的占比就不大，更多的要考虑内联以后可能带来的其他优化收益（比如常量传播，公共子表达消除等）
+
+> 📌**ABI**
+>
+> ABI 是Application Binary Interface的缩写。他是一个多维度的规则的集合，共同绝对了高级语言如何一步一步转换成可被CPU执行的二进制文件。具体到：
+>
+> 1. **调用维度**：coalling convention （LLVM 的 `ccc/fastcc/...`，ARM上的 AAPCS ，x86_64上的systemv AMD64 ABI for linux和MS x64 ABI for windows也有对调用维度做规定，比如哪些寄存器用来参数传递，哪些寄存器是caller saved或callee saved等等）
+> 2. **数据布局维度**：type size/alignment、struct layout（对应在llvm中的`datalayout`, 其他平台ABI也对这一维度有规定）
+> 3. **符号维度**：mangling、链接名、可见性
+> 4. **异常/RTTI 维度**：unwind tables、personality、typeinfo 布局
+> 5. **系统调用维度**：syscall number、寄存器约定
+
+
+
+> 📌**ABI的种类**
+>
+> 现存很多种ABI，可以归纳为四类：
+>
+> 1. platform ABI（AAPCS/AAPCS64、SysV AMD64、 MS x64）
+>
+>    在 LLVM 里最终体现为 Module 的 `target triple` + `datalayout` + 后端的 CC lowering 规则。通过一下三部分决定：
+>
+>    - `--target=<triple>`（或编译器默认 triple）
+>    - `-march/-mcpu/-mfpu/-mfloat-abi/-mabi`（ARM 上尤其关键）
+>    - 以及链接时的目标（ELF/COFF、relocation model 等）
+>
+> 2. C++ ABI（Itanium C++ ABI和MSVC C++ ABI）
+>
+>    由目标环境决定（例如 `x86_64-pc-windows-msvc` 通常走 MSVC C++ ABI；`*-linux-gnu` 多数走 Itanium 风格）或者由编译器家族/模式决定（Clang-cl 倾向 MSVC 生态）。
+>    程序员常见“显式控制”的点反而是一些细节开关：比如 `-fabi-version=`、`-fno-exceptions`、`-fno-rtti`（这些会改变可见的 ABI 交互面），但很少有人“选择 Itanium ABI”作为一个独立选项，因为它基本跟着 triple/工具链走。
+>
+> 3. lib ABI（libc/libstdc++和 libc++/unwind 运行库）
+>
+>    这层决定了“你最终跟谁二进制互操作”，也就决定了你必须遵守哪套库 ABI。比如：
+>
+>    - 通过`--sysroot=...`、选择 glibc/musl/newlib 等哪个libc库。
+>    - 通过`-stdlib=libstdc++` 或 `-stdlib=libc++`选择哪个c++标准库。
+>    - 通过`-rtlib=compiler-rt` vs `libgcc`，`-unwindlib=libunwind` 等选择哪个运行库。（提供异常、new/delete、线程、启动代码、TLS 机制、动态链接器等功能）
+>    - 通过`-static`、`-static-libstdc++`…选择静/动态链接策略。
+>
+> 4. 内核和系统调用ABI（ `*-linux-gnu` vs `*-none-eabi`）
+>
+>    更多由 **OS triple** 决定（例如 `*-linux-gnu` vs `*-none-eabi`），但日常开发里你通常不直接写 syscall，而是通过 libc/rt 的封装去用；因此程序员感知到的控制点通常是：
+>
+>    - 目标 OS/环境：triple、sysroot、链接器
+>    - 是否裸机：`none-eabi`（没有“内核 ABI”，只有你自己的 runtime/semihosting 约定）
+
+> 📌**ABI汇总**
+>
+> | 规范 / ABI                                   | 调用维度<br />（call conv）                                  | 数据布局维度（type/align/<br />struct）                      | 符号维度（mangling/链接名/可见性）                           | 异常/RTTI 维度（unwind/<br />personality/<br />typeinfo）    | 系统调用维度（syscall # / regs）                  | 对象文件/<br />动态链接维度（ELF/COFF/reloc）          |
+> | -------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------- | ------------------------------------------------------ |
+> | **SysV AMD64 psABI**                         | ✅（寄存器传参、callee/caller-save、栈对齐、varargs 等）      | ◐（基础类型与对齐、部分 aggregate 规则；C++ 对象另靠 C++ ABI） | ◐（链接层符号/可见性规则；不定义 C++ mangling）              | ◐（通常与 DWARF EH/unwind 约定组合使用）                     | —（Linux syscall ABI 另算）                       | ✅（ELF、relocation、PLT/GOT 等是核心内容之一）         |
+> | **MS x64 ABI（Windows 用户态）**             | ✅（RCX/RDX/R8/R9、shadow space、save/restore 等）            | ◐（基础类型布局与对齐；生态由 MSVC 约定补齐）                | ◐（链接符号规则更多由 COFF/PE + 工具链约定；C++ mangling 另在 MSVC C++ ABI） | ◐（与 Windows unwind/SEH + C++ runtime 组合）                | —（Windows syscall 不作为稳定 ABI 对外承诺）      | ✅（COFF/PE、unwind 元数据等）                          |
+> | **AAPCS / AAPCS64（ARM 过程调用标准）**      | ✅（参数/返回、保存规则、栈对齐、VFP/浮点变体等）             | ◐（基础布局/对齐/aggregate 规则；更完整平台 ABI 需结合 ELF/平台文档） | —/◐（本身不主谈符号；链接/符号多由 ELF for ARM/AArch64 补）  | ◐（AArch32 常见 EHABI；AArch64 常见 DWARF EH，需 runtime 组合） | —（Linux/裸机 syscall 或 semihosting 另算）       | ◐（通常需要与 ELF for ARM/AArch64 一起构成“平台 ABI”） |
+> | **ELF gABI / 平台 ELF ABI（统称）**          | —/◐（不主谈 call；但会约束一些与调用相关的对象表示）         | —/◐（少量类型/对齐可能被引用；主体不在这）                   | ◐（符号表、可见性、版本等“链接符号维度”）                    | ◐（.eh_frame/.ARM.exidx 等编码属于对象文件层）               | —                                                 | ✅（ELF 文件格式、重定位、动态链接、符号版本）          |
+> | **Itanium C++ ABI（常见于 Linux/ELF 生态）** | —（不规定寄存器传参细节）                                    | ✅（C++ 对象布局：vtable/继承/虚基类等语义层布局约定；底座仍依赖 datalayout） | ✅（C++ 名字改编规则是核心）                                  | ✅（RTTI/typeinfo、异常对象与 catch 匹配接口等）              | —                                                 | ◐（会依赖 ELF/DWARF 约定落地，但不以其为主）           |
+> | **MSVC C++ ABI（Windows C++ 生态）**         | —/◐（调用维度主要由 MS x64 ABI；但某些 thiscall 等历史约定与编译器相关） | ✅（C++ 对象布局/vftable/vbtable 等）                         | ✅（MSVC 风格 mangling）                                      | ✅（与 SEH/unwind + MSVC runtime 的 C++ 异常/RTTI 契约）      | —                                                 | ◐（落地在 COFF/PE + PDB/UNWIND_INFO 等）               |
+> | **Linux kernel ABI（syscall ABI + UAPI）**   | —                                                            | ◐（UAPI 结构体布局：stat、ioctl 结构等是 ABI 的一部分）      | —                                                            | —                                                            | ✅（syscall 号、寄存器/指令约定、errno 语义等）    | —                                                      |
+> | **libc ABI（glibc/musl/newlib 等）**         | ◐（通常“继承平台 ccc”；自身不另造 call conv）                | ◐（若暴露类型布局则成为承诺；大量类型可做不透明化）          | ✅（导出符号集合、符号版本：glibc 很典型）                    | —/◐（libc 本身少；但 unwind/threads 相关接口可能牵涉）       | ◐（提供 syscall 封装；但 syscall ABI 本体归内核） | ◐（动态链接行为/符号版本与 ELF 强相关）                |
+> | **C++ 标准库 ABI（libstdc++ / libc++）**     | ◐（继承平台 call ABI）                                       | ✅/◐（很多标准库类型布局属于 ABI：如 string/vector 的实现细节） | ✅（大量模板实例符号、符号版本/命名空间内符号约定）           | ✅/◐（异常类型、typeinfo、new/delete 等与 C++ ABI/运行库强耦合） | —                                                 | ◐（与 ELF/COFF 链接、符号可见性强耦合）                |
+
+---
+
+
 
 ## 3.5 运行时抢占说明符号
 
